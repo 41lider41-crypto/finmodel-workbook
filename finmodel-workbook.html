@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>От чашки до сети</title>
+<style>
+:root{
+  --ink:#1F4E79; --ink-soft:#2E6193; --accent:#C55A11; --accent-soft:#E07A2E; --accent-contrast:#FFFFFF;
+  --bg:#FFFFFF; --panel:#F7FAFC; --panel-2:#EFF5F9; --row-alt:#DEEAF1; --border:#CFE0EA;
+  --text:#1F2A33; --muted:#5B7385;
+  --footer-bg:#F1F3F4; --footer-border:#D5D9DC;
+  --good:#2E7D46; --good-bg:#E5F3E9; --warn:#9A6B00; --warn-bg:#FBF1DA; --bad:#B3261E; --bad-bg:#FBE7E5;
+  --shadow:0 1px 2px rgba(31,78,121,.08), 0 4px 14px rgba(31,78,121,.07);
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#BFD9F2; --ink-soft:#8FB8E0; --accent:#FF9A4D; --accent-soft:#FFB073; --accent-contrast:#241000;
+    --bg:#101820; --panel:#16212C; --panel-2:#1C2A37; --row-alt:#1B2E3D; --border:#2B3E4C;
+    --text:#E7EEF3; --muted:#9FB4C4;
+    --footer-bg:#0C131A; --footer-border:#22303B;
+    --good:#7BD39A; --good-bg:#123322; --warn:#E6C36B; --warn-bg:#3A2E10; --bad:#F0928C; --bad-bg:#3A1613;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#BFD9F2; --ink-soft:#8FB8E0; --accent:#FF9A4D; --accent-soft:#FFB073; --accent-contrast:#241000;
+  --bg:#101820; --panel:#16212C; --panel-2:#1C2A37; --row-alt:#1B2E3D; --border:#2B3E4C;
+  --text:#E7EEF3; --muted:#9FB4C4;
+  --footer-bg:#0C131A; --footer-border:#22303B;
+  --good:#7BD39A; --good-bg:#123322; --warn:#E6C36B; --warn-bg:#3A2E10; --bad:#F0928C; --bad-bg:#3A1613;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Arial,Helvetica,"Segoe UI",sans-serif;line-height:1.5;}
+h1,h2,h3{color:var(--ink);text-wrap:balance;margin:0 0 .3em;}
+h2{font-size:1.35rem;}
+h3{font-size:1.05rem;}
+p{margin:.4em 0;}
+button{font-family:inherit;}
+input,textarea{font-family:inherit;font-size:1rem;}
+table{border-collapse:collapse;}
+.num{font-variant-numeric:tabular-nums;}
+
+.app-shell{max-width:1180px;margin:0 auto;padding:0 0 40px;}
+
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px 12px;}
+.topbar-brand{display:flex;align-items:center;gap:12px;}
+.topbar-logo{font-size:1.8rem;line-height:1;}
+.topbar-title{color:var(--ink);font-weight:bold;font-size:1.15rem;}
+.topbar-sub{color:var(--muted);font-size:.85rem;}
+.topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+
+.btn-ghost{background:var(--panel);color:var(--ink);border:1px solid var(--border);border-radius:999px;padding:8px 14px;font-size:.85rem;cursor:pointer;}
+.btn-ghost:hover{background:var(--panel-2);}
+.btn-ghost-sm,.btn-danger-sm{border-radius:999px;padding:5px 10px;font-size:.8rem;border:1px solid var(--border);background:var(--panel);cursor:pointer;color:var(--text);}
+.btn-danger-sm{background:var(--bad-bg);color:var(--bad);border-color:var(--bad);}
+.reset-confirm{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);margin-left:8px;}
+
+.progress-track{height:6px;background:var(--panel-2);margin:0 20px;border-radius:999px;overflow:hidden;}
+.progress-fill{height:100%;width:0%;background:var(--accent);transition:width .3s ease;}
+
+.layout{display:grid;grid-template-columns:230px 1fr;gap:22px;padding:18px 20px 0;align-items:start;}
+
+.sidebar{display:flex;flex-direction:column;gap:4px;position:sticky;top:12px;}
+.side-item{display:flex;align-items:center;gap:8px;text-align:left;background:transparent;border:1px solid transparent;border-radius:10px;padding:9px 10px;font-size:.86rem;color:var(--text);cursor:pointer;}
+.side-item:hover{background:var(--panel);}
+.side-item.is-active{background:var(--panel-2);border-color:var(--border);color:var(--ink);font-weight:bold;}
+.dot{width:9px;height:9px;border-radius:999px;background:var(--border);flex:none;}
+.dot.filled{background:var(--good);}
+
+.content{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:26px 28px;box-shadow:var(--shadow);min-height:420px;}
+.panel{display:none;}
+.panel.is-active{display:block;}
+.panel-kicker{color:var(--accent);font-weight:bold;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.panel-intro-text{color:var(--muted);max-width:62ch;}
+
+.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:16px 0;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:.88rem;font-weight:bold;color:var(--text);display:flex;align-items:center;gap:6px;}
+.field input[type=number],.field input[type=text],.field textarea{border:1px solid var(--border);border-radius:9px;padding:9px 11px;background:var(--bg);color:var(--text);width:100%;}
+.field input:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.field textarea{resize:vertical;min-height:64px;}
+
+.qm{width:19px;height:19px;border-radius:999px;border:1px solid var(--ink-soft);background:transparent;color:var(--ink-soft);font-size:.72rem;font-weight:bold;cursor:pointer;line-height:1;flex:none;}
+.qm:hover{background:var(--panel-2);}
+.tip-bubble{grid-column:1/-1;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:.85rem;color:var(--muted);margin-top:2px;}
+
+.result-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:18px 0 6px;}
+.result-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;}
+.result-card .rc-label{font-size:.78rem;color:var(--muted);}
+.result-card .rc-value{font-size:1.35rem;font-weight:bold;color:var(--ink);font-variant-numeric:tabular-nums;}
+.result-card .rc-sub{font-size:.76rem;color:var(--muted);margin-top:2px;}
+.calc-hint{font-size:.82rem;color:var(--muted);font-style:italic;margin:2px 0 10px;}
+
+.step-note{background:var(--panel-2);border-radius:10px;padding:10px 14px;font-size:.88rem;color:var(--muted);margin:14px 0;}
+
+.row-table{margin:10px 0;display:flex;flex-direction:column;gap:6px;}
+.row-editable{display:grid;grid-template-columns:1fr 150px 34px;gap:8px;align-items:center;}
+.row-editable.two-col{grid-template-columns:110px 1fr 34px;}
+.row-editable input{border:1px solid var(--border);border-radius:8px;padding:7px 9px;background:var(--bg);color:var(--text);width:100%;}
+.row-remove{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad);border-radius:8px;height:32px;cursor:pointer;}
+.row-add{margin-top:6px;background:var(--panel-2);border:1px dashed var(--ink-soft);color:var(--ink);border-radius:8px;padding:7px 12px;font-size:.85rem;cursor:pointer;}
+
+.data-table{width:100%;border-collapse:collapse;font-size:.86rem;}
+.table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:12px 0;}
+.data-table th{background:var(--panel-2);color:var(--ink);text-align:right;padding:8px 10px;position:sticky;top:0;white-space:nowrap;}
+.data-table th:first-child,.data-table td:first-child{text-align:left;}
+.data-table td{padding:7px 10px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.data-table tbody tr:nth-child(even){background:var(--row-alt);}
+.table-empty{color:var(--muted);font-style:italic;padding:14px !important;text-align:left !important;white-space:normal !important;}
+
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:.82rem;font-weight:bold;}
+.status-pill.green{background:var(--good-bg);color:var(--good);}
+.status-pill.yellow{background:var(--warn-bg);color:var(--warn);}
+.status-pill.red{background:var(--bad-bg);color:var(--bad);}
+.status-pill .sdot{width:8px;height:8px;border-radius:999px;background:currentColor;}
+
+.scenario-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0;}
+.scenario-card{border-radius:10px;padding:14px;border:1px solid var(--border);background:var(--bg);}
+.scenario-card h4{margin:0 0 8px;font-size:.9rem;color:var(--ink);}
+.scenario-card.mid{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:16px 0 22px;}
+.summary-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.summary-card .sc-tag{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:bold;}
+.summary-card .sc-value{font-size:1.3rem;font-weight:bold;color:var(--ink);margin-top:4px;font-variant-numeric:tabular-nums;}
+.summary-card .sc-value.small{font-size:1.02rem;}
+.reflection-list{background:var(--panel-2);border-radius:12px;padding:16px 20px;margin-top:10px;}
+.reflection-list li{margin:6px 0;}
+
+.nav-buttons{display:flex;justify-content:space-between;gap:10px;margin-top:26px;padding-top:18px;border-top:1px solid var(--border);}
+.btn-primary{background:var(--accent);color:var(--accent-contrast);border:none;border-radius:999px;padding:11px 22px;font-size:.92rem;font-weight:bold;cursor:pointer;}
+.btn-primary:hover{background:var(--accent-soft);}
+.btn-secondary{background:transparent;color:var(--ink);border:1px solid var(--border);border-radius:999px;padding:11px 22px;font-size:.92rem;cursor:pointer;}
+.btn-secondary:hover{background:var(--panel-2);}
+.spacer{flex:1;}
+
+.app-footer{max-width:1180px;margin:22px auto 0;padding:14px 20px 0;border-top:1px solid var(--footer-border);color:var(--muted);font-size:.8rem;background:transparent;}
+
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;}
+  .side-item{white-space:nowrap;flex:none;}
+  .content{padding:18px 16px;}
+  .row-editable{grid-template-columns:1fr 110px 34px;}
+}
+
+@media print{
+  .sidebar,.topbar-actions,.nav-buttons,.qm,.tip-bubble,.progress-track{display:none !important;}
+  .panel{display:block !important;margin-bottom:28px;page-break-inside:avoid;}
+  .content{box-shadow:none;border:none;}
+  .layout{display:block;}
+  body{background:#fff;color:#000;}
+}
+@media (prefers-reduced-motion: reduce){
+  .progress-fill{transition:none;}
+}
+</style>
+</head>
+<body>
+
+
+<div class="app-shell" id="app">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="topbar-logo" aria-hidden="true">☕</span>
+      <div>
+        <div class="topbar-title">От чашки до сети</div>
+        <div class="topbar-sub">Рабочая тетрадь по финансовому моделированию</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-ghost" id="btn-print" type="button">🖨 Скачать / распечатать итог</button>
+      <span>
+        <button class="btn-ghost" id="btn-reset" type="button">Начать заново</button>
+        <span class="reset-confirm" id="reset-confirm" hidden>Точно очистить все данные?
+          <button class="btn-danger-sm" id="reset-yes" type="button">Да, очистить</button>
+          <button class="btn-ghost-sm" id="reset-no" type="button">Отмена</button>
+        </span>
+      </span>
+    </div>
+  </header>
+
+  <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar" aria-label="Разделы тетради">
+      <button class="side-item is-active" data-target="intro"><span class="dot" data-dot="intro"></span>Начало</button>
+      <button class="side-item" data-target="b1"><span class="dot" data-dot="b1"></span>1. Юнит-экономика</button>
+      <button class="side-item" data-target="b2"><span class="dot" data-dot="b2"></span>2. Отток клиентов</button>
+      <button class="side-item" data-target="b3"><span class="dot" data-dot="b3"></span>3. LTV и окупаемость</button>
+      <button class="side-item" data-target="b4"><span class="dot" data-dot="b4"></span>4. План продаж</button>
+      <button class="side-item" data-target="b5"><span class="dot" data-dot="b5"></span>5. Расходы</button>
+      <button class="side-item" data-target="b6"><span class="dot" data-dot="b6"></span>6. Точка безубыточности</button>
+      <button class="side-item" data-target="b7"><span class="dot" data-dot="b7"></span>7. Модель на 12 мес.</button>
+      <button class="side-item" data-target="b8"><span class="dot" data-dot="b8"></span>8. Сценарии</button>
+      <button class="side-item" data-target="b9"><span class="dot" data-dot="b9"></span>9. Инвестиции и кассовый разрыв</button>
+      <button class="side-item" data-target="b10"><span class="dot" data-dot="b10"></span>10. Сеть кофеен</button>
+      <button class="side-item" data-target="b11"><span class="dot" data-dot="b11"></span>11. Инвестиции в сеть</button>
+      <button class="side-item" data-target="summary"><span class="dot" data-dot="summary"></span>Итог</button>
+    </nav>
+
+    <main class="content" id="content">
+
+      <!-- INTRO -->
+      <section class="panel is-active" id="panel-intro">
+        <div class="panel-kicker">Начало</div>
+        <h2>Можно ли предсказать будущее бизнеса?</h2>
+        <p class="panel-intro-text">Полностью — нет. Но можно перевести свои предположения о бизнесе в цифры и заранее увидеть, что получится: сколько заработаете, когда выйдете в ноль и сколько денег понадобится на старте. Это и называется <b>финансовой моделью</b> — не гадание, а система предположений, переведённых в расчёт.</p>
+        <p class="panel-intro-text">В этой тетради вы пройдёте путь на примере кофейни: от одной проданной чашки кофе до модели сети кофеен на 12 месяцев. Заполняйте поля своими цифрами (или цифрами примера) — итоги каждого блока считаются сразу, без кнопки «посчитать». Поздние блоки используют результаты ранних, так что двигаться лучше по порядку, но вы всегда можете вернуться назад и поправить любое число — всё пересчитается само.</p>
+        <p class="panel-intro-text">Данные сохраняются прямо в этом браузере, на этом устройстве — можно закрыть страницу и вернуться позже.</p>
+        <div class="nav-buttons"><span class="spacer"></span><button class="btn-primary" data-nav="next">Начать →</button></div>
+      </section>
+
+      <!-- BLOCK 1 -->
+      <section class="panel" id="panel-b1">
+        <div class="panel-kicker">Блок 1 из 11</div>
+        <h2>Юнит-экономика чашки кофе</h2>
+        <p class="step-note">Юнит-экономика — это расчёт на одну «единицу» бизнеса, здесь: на одну чашку кофе.
+          <button class="qm" type="button" data-tip-target="tip-unit">?</button>
+          <span class="tip-bubble" id="tip-unit" hidden>Как если бы вы посчитали, сколько зарабатываете и тратите на одну проданную вещь — ещё до того, как считать весь бизнес целиком.</span>
+        </p>
+        <div class="field-grid">
+          <div class="field"><label for="b1-price">Цена одной чашки кофе, ₽</label><input type="number" id="b1-price" placeholder="200" min="0" step="any"></div>
+          <div class="field"><label for="b1-var">Переменные расходы на 1 чашку (зерно, стакан, молоко), ₽</label><input type="number" id="b1-var" placeholder="80" min="0" step="any"></div>
+          <div class="field"><label for="b1-ad">Расходы на рекламу за месяц, ₽</label><input type="number" id="b1-ad" placeholder="30000" min="0" step="any"></div>
+          <div class="field"><label for="b1-newcli">Новых клиентов за месяц от этой рекламы, чел.</label><input type="number" id="b1-newcli" placeholder="150" min="0" step="any"></div>
+        </div>
+        <div class="result-row">
+          <div class="result-card" title="Цена чашки минус переменные расходы на неё"><div class="rc-label">Маржа с 1 чашки</div><div class="rc-value" id="b1-margin">—</div><div class="rc-sub" id="b1-marginpct"></div></div>
+          <div class="result-card" title="Расходы на рекламу, делённые на число новых клиентов">
+            <div class="rc-label">CAC — стоимость привлечения клиента
+              <button class="qm" type="button" data-tip-target="tip-cac">?</button>
+            </div>
+            <div class="rc-value" id="b1-cac">—</div>
+          </div>
+        </div>
+        <span class="tip-bubble" id="tip-cac" hidden>CAC (Customer Acquisition Cost) — сколько в среднем стоит привлечь одного нового клиента. Пример: потратили 30 000 ₽ на рекламу, пришло 150 новых человек — привлечение одного обошлось в 200 ₽.</span>
+        <p class="calc-hint" id="b1-hint">Заполните поля выше, чтобы увидеть маржу и CAC.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 2 -->
+      <section class="panel" id="panel-b2">
+        <div class="panel-kicker">Блок 2 из 11</div>
+        <h2>Удержание и отток клиентов</h2>
+        <p class="step-note">Почему клиент возвращается — и почему перестаёт.</p>
+        <div class="field-grid">
+          <div class="field"><label for="b2-start">Клиентов на начало месяца, чел.</label><input type="number" id="b2-start" placeholder="40" min="0" step="any"></div>
+          <div class="field"><label for="b2-lost">Из них не вернулись за месяц, чел.
+              <button class="qm" type="button" data-tip-target="tip-churn">?</button>
+            </label><input type="number" id="b2-lost" placeholder="6" min="0" step="any"></div>
+        </div>
+        <span class="tip-bubble" id="tip-churn" hidden>Churn Rate (отток) — доля клиентов, которые перестали к вам приходить за месяц. Пример: было 40 постоянных клиентов, 6 перестали заходить — отток 15%.</span>
+        <div class="result-row">
+          <div class="result-card" title="Ушедшие / клиенты на начало периода × 100%"><div class="rc-label">Churn Rate (отток)</div><div class="rc-value" id="b2-churn">—</div></div>
+          <div class="result-card" title="100% минус отток"><div class="rc-label">Retention Rate (удержание)</div><div class="rc-value" id="b2-retention">—</div></div>
+          <div class="result-card" title="1 / отток (в долях)"><div class="rc-label">Средний срок «жизни» клиента</div><div class="rc-value" id="b2-lifetime">—</div></div>
+        </div>
+        <p class="calc-hint" id="b2-hint">Заполните оба поля выше, чтобы увидеть отток и срок жизни клиента.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 3 -->
+      <section class="panel" id="panel-b3">
+        <div class="panel-kicker">Блок 3 из 11</div>
+        <h2>LTV и окупаемость клиента</h2>
+        <p class="step-note">Сколько клиент приносит за всё время — и окупает ли он себя.
+          <button class="qm" type="button" data-tip-target="tip-ltv">?</button>
+          <span class="tip-bubble" id="tip-ltv" hidden>LTV (Lifetime Value) — сколько денег в сумме принесёт один клиент за всё время, пока он у вас покупает, а не за одну покупку.</span>
+        </p>
+        <div class="field-grid">
+          <div class="field"><label for="b3-freq">Средняя частота покупок в месяц на клиента, раз</label><input type="number" id="b3-freq" placeholder="8" min="0" step="any"></div>
+        </div>
+        <div class="result-row">
+          <div class="result-card" title="Маржа × частота покупок в месяц × срок жизни клиента"><div class="rc-label">LTV</div><div class="rc-value" id="b3-ltv">—</div></div>
+          <div class="result-card" title="LTV, делённый на CAC. Хорошо, если больше 3"><div class="rc-label">LTV / CAC</div><div class="rc-value" id="b3-ltvcac">—</div></div>
+          <div class="result-card" title="CAC / (маржа × частота покупок)"><div class="rc-label">Окупаемость клиента</div><div class="rc-value" id="b3-payback">—</div></div>
+        </div>
+        <p class="calc-hint" id="b3-hint">Заполните блоки 1 и 2, чтобы увидеть LTV.</p>
+        <div class="step-note" id="b3-formula"></div>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 4 -->
+      <section class="panel" id="panel-b4">
+        <div class="panel-kicker">Блок 4 из 11</div>
+        <h2>План продаж</h2>
+        <p class="step-note">Сколько клиентов и покупок понадобится кофейне в месяц.</p>
+        <div class="field-grid">
+          <div class="field"><label for="b4-newcli">Новых клиентов в месяц, чел.</label><input type="number" id="b4-newcli" placeholder="50" min="0" step="any"></div>
+          <div class="field"><label for="b4-retcli">Постоянных (повторных) клиентов в месяц, чел.</label><input type="number" id="b4-retcli" placeholder="300" min="0" step="any"></div>
+        </div>
+        <div class="result-row">
+          <div class="result-card" title="(Новые + постоянные) × частота покупок из Блока 3"><div class="rc-label">Чашек в месяц</div><div class="rc-value" id="b4-cups">—</div></div>
+          <div class="result-card" title="Чашек в месяц × цена чашки из Блока 1"><div class="rc-label">Выручка в месяц</div><div class="rc-value" id="b4-revenue">—</div></div>
+        </div>
+        <p class="calc-hint" id="b4-hint">Заполните частоту покупок в Блоке 3, чтобы увидеть чашки и выручку в месяц.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 5 -->
+      <section class="panel" id="panel-b5">
+        <div class="panel-kicker">Блок 5 из 11</div>
+        <h2>Расходы: переменные и постоянные</h2>
+        <p class="step-note">Какие расходы зависят от продаж — а какие есть всегда.
+          <button class="qm" type="button" data-tip-target="tip-costs">?</button>
+          <span class="tip-bubble" id="tip-costs" hidden>Переменные расходы растут вместе с продажами (зерно, стаканы, молоко) — не продали чашку, не потратили на неё ни рубля. Постоянные есть, даже если вы не продали ни одной чашки — аренда, зарплата, коммуналка.</span>
+        </p>
+        <h3>Переменные расходы (на 1 чашку)</h3>
+        <div class="row-table" id="b5-varrows"></div>
+        <button class="row-add" type="button" id="b5-var-add">+ добавить статью</button>
+        <h3 style="margin-top:20px;">Постоянные расходы (в месяц)</h3>
+        <div class="row-table" id="b5-fixedrows"></div>
+        <button class="row-add" type="button" id="b5-fixed-add">+ добавить статью</button>
+        <div class="result-row">
+          <div class="result-card" title="Сумма всех статей переменных расходов на чашку"><div class="rc-label">Итого переменные, ₽/чашку</div><div class="rc-value" id="b5-totalvar">—</div></div>
+          <div class="result-card" title="Сумма всех статей постоянных расходов в месяц"><div class="rc-label">Итого постоянные, ₽/мес</div><div class="rc-value" id="b5-totalfixed">—</div></div>
+        </div>
+        <p class="calc-hint" id="b5-hint"></p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 6 -->
+      <section class="panel" id="panel-b6">
+        <div class="panel-kicker">Блок 6 из 11</div>
+        <h2>Точка безубыточности</h2>
+        <p class="step-note">Когда кофейня выходит в ноль — и сколько чашек продавать в день.
+          <button class="qm" type="button" data-tip-target="tip-be">?</button>
+          <span class="tip-bubble" id="tip-be" hidden>Точка безубыточности — сколько нужно продать, чтобы просто покрыть все расходы, ещё не заработав. Всё, что продано сверху, — уже прибыль.</span>
+        </p>
+        <div class="field-grid">
+          <div class="field"><label for="b6-days">Рабочих дней в месяце</label><input type="number" id="b6-days" placeholder="30" min="1" step="any"></div>
+          <div class="field"><label for="b6-max">Максимум чашек в день (необязательно)</label><input type="number" id="b6-max" placeholder="80" min="0" step="any"></div>
+        </div>
+        <div class="result-row">
+          <div class="result-card" title="Постоянные расходы (Блок 5) / маржа с чашки (Блок 1)"><div class="rc-label">Точка безубыточности, чашек/мес</div><div class="rc-value" id="b6-be">—</div></div>
+          <div class="result-card" title="Точка безубыточности / рабочих дней"><div class="rc-label">Точка безубыточности, чашек/день</div><div class="rc-value" id="b6-beday">—</div></div>
+        </div>
+        <p id="b6-indicator"></p>
+        <p class="calc-hint" id="b6-hint">Заполните постоянные расходы (Блок 5), маржу (Блок 1) и рабочие дни.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 7 -->
+      <section class="panel" id="panel-b7">
+        <div class="panel-kicker">Блок 7 из 11</div>
+        <h2>Финансовая модель одной кофейни на 12 месяцев</h2>
+        <p class="step-note">Собираем всё вместе на год вперёд — от плана продаж (Блок 4) с учётом ожидаемого роста.</p>
+        <div class="field-grid">
+          <div class="field"><label for="b7-growth">Ожидаемый темп роста продаж в месяц, %</label><input type="number" id="b7-growth" placeholder="3" step="any"></div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Месяц</th><th>Продажи, чашек</th><th>Выручка</th><th>Перем. расходы</th><th>Пост. расходы</th><th>Прибыль</th><th>Cash flow нарастающим итогом</th></tr></thead>
+            <tbody id="b7-tbody"></tbody>
+          </table>
+        </div>
+        <div class="result-row">
+          <div class="result-card"><div class="rc-label">Выручка за год</div><div class="rc-value" id="b7-totalrevenue">—</div></div>
+          <div class="result-card"><div class="rc-label">Прибыль за год</div><div class="rc-value" id="b7-totalprofit">—</div></div>
+        </div>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 8 -->
+      <section class="panel" id="panel-b8">
+        <div class="panel-kicker">Блок 8 из 11</div>
+        <h2>Сценарии: пессимистичный / реалистичный / оптимистичный</h2>
+        <p class="step-note">Что произойдёт, если продажи пойдут не по плану.</p>
+        <div class="field-grid">
+          <div class="field"><label for="b8-pess">Отклонение продаж, пессимистичный сценарий, %</label><input type="number" id="b8-pess" placeholder="-20" step="any"></div>
+          <div class="field"><label for="b8-opt">Отклонение продаж, оптимистичный сценарий, %</label><input type="number" id="b8-opt" placeholder="20" step="any"></div>
+        </div>
+        <div class="scenario-grid">
+          <div class="scenario-card"><h4>Пессимистичный</h4><div class="rc-label">Прибыль за год</div><div class="rc-value" id="b8-pess-profit">—</div><div class="rc-label" style="margin-top:8px;">Cash flow на конец года</div><div class="rc-value" id="b8-pess-cash">—</div></div>
+          <div class="scenario-card mid"><h4>Реалистичный (Блок 7)</h4><div class="rc-label">Прибыль за год</div><div class="rc-value" id="b8-real-profit">—</div><div class="rc-label" style="margin-top:8px;">Cash flow на конец года</div><div class="rc-value" id="b8-real-cash">—</div></div>
+          <div class="scenario-card"><h4>Оптимистичный</h4><div class="rc-label">Прибыль за год</div><div class="rc-value" id="b8-opt-profit">—</div><div class="rc-label" style="margin-top:8px;">Cash flow на конец года</div><div class="rc-value" id="b8-opt-cash">—</div></div>
+        </div>
+        <p class="calc-hint" id="b8-hint">Заполните Блок 7, чтобы увидеть сценарии.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 9 -->
+      <section class="panel" id="panel-b9">
+        <div class="panel-kicker">Блок 9 из 11</div>
+        <h2>Стартовые вложения и кассовый разрыв</h2>
+        <p class="step-note">Почему прибыль есть, а денег может не хватить.
+          <button class="qm" type="button" data-tip-target="tip-gap">?</button>
+          <span class="tip-bubble" id="tip-gap" hidden>Кассовый разрыв — момент, когда на счету физически не хватает денег, хотя по итогам года бизнес может быть прибыльным. Прибыль на бумаге и деньги в кассе — разные вещи.</span>
+        </p>
+        <h3>Стартовые вложения</h3>
+        <div class="row-table" id="b9-rows"></div>
+        <button class="row-add" type="button" id="b9-add">+ добавить статью</button>
+        <div class="field-grid" style="margin-top:16px;">
+          <div class="field"><label for="b9-reserve">Резерв на первые месяцы (оборотные средства), ₽</label><input type="number" id="b9-reserve" placeholder="50000" min="0" step="any"></div>
+        </div>
+        <div class="result-row">
+          <div class="result-card"><div class="rc-label">Итого стартовые вложения</div><div class="rc-value" id="b9-total">—</div></div>
+          <div class="result-card"><div class="rc-label">Месяц выхода в кассовый плюс</div><div class="rc-value" id="b9-payback">—</div></div>
+          <div class="result-card"><div class="rc-label">Глубина кассового разрыва</div><div class="rc-value" id="b9-depth">—</div></div>
+        </div>
+        <p class="calc-hint" id="b9-hint">Заполните Блок 7 и статьи стартовых вложений.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 10 -->
+      <section class="panel" id="panel-b10">
+        <div class="panel-kicker">Блок 10 из 11</div>
+        <h2>Масштабирование: от одной кофейни к сети</h2>
+        <p class="step-note">Как экономика одной точки превращается в модель сети. Каждая новая точка живёт по той же экономике, что и первая (Блок 7), просто стартует со своего месяца.</p>
+        <h3>График открытия точек</h3>
+        <div class="row-table" id="b10-rows"></div>
+        <button class="row-add" type="button" id="b10-add">+ добавить точку</button>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Месяц</th><th>Открыто точек</th><th>Выручка сети</th><th>Расходы сети</th><th>Прибыль сети</th></tr></thead>
+            <tbody id="b10-tbody"></tbody>
+          </table>
+        </div>
+        <div class="result-row">
+          <div class="result-card"><div class="rc-label">Точек к 12-му месяцу</div><div class="rc-value" id="b10-count">—</div></div>
+        </div>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- BLOCK 11 -->
+      <section class="panel" id="panel-b11">
+        <div class="panel-kicker">Блок 11 из 11</div>
+        <h2>Инвестиции</h2>
+        <p class="step-note">Сколько нужно денег на сеть — и что за это получит инвестор.</p>
+        <h3>Использование инвестиций</h3>
+        <div class="row-table" id="b11-rows"></div>
+        <button class="row-add" type="button" id="b11-add">+ добавить статью</button>
+        <div class="field-grid" style="margin-top:16px;">
+          <div class="field"><label for="b11-terms">Условия для инвестора (необязательно)</label><textarea id="b11-terms" placeholder="Например: 20% доли в бизнесе или 15% от чистой прибыли до возврата суммы ×2"></textarea></div>
+        </div>
+        <div class="result-row">
+          <div class="result-card"><div class="rc-label">Итого требуется инвестиций</div><div class="rc-value" id="b11-total">—</div></div>
+          <div class="result-card" title="Месяц, когда накопленная прибыль сети покрывает инвестиции">
+            <div class="rc-label">Срок окупаемости инвестиций
+              <button class="qm" type="button" data-tip-target="tip-roi">?</button>
+            </div>
+            <div class="rc-value" id="b11-payback">—</div>
+          </div>
+          <div class="result-card"><div class="rc-label">ROI за 12 месяцев</div><div class="rc-value" id="b11-roi">—</div></div>
+        </div>
+        <span class="tip-bubble" id="tip-roi" hidden>ROI — сколько процентов от вложенных денег бизнес вернул прибылью за период. Срок окупаемости — через сколько месяцев накопленная прибыль сравняется с суммой вложений.</span>
+        <p class="calc-hint" id="b11-hint">Заполните Блок 10 и статьи инвестиций.</p>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" data-nav="next">Далее →</button></div>
+      </section>
+
+      <!-- SUMMARY -->
+      <section class="panel" id="panel-summary">
+        <div class="panel-kicker">Итог</div>
+        <h2>Путь от чашки до сети — на одном листе</h2>
+        <div class="summary-grid">
+          <div class="summary-card"><div class="sc-tag">Юнит-экономика</div><div class="sc-value" id="sum-margin">—</div><div class="rc-sub">маржа с чашки</div></div>
+          <div class="summary-card"><div class="sc-tag">Привлечение</div><div class="sc-value" id="sum-cac">—</div><div class="rc-sub">CAC</div></div>
+          <div class="summary-card"><div class="sc-tag">LTV / CAC</div><div class="sc-value small" id="sum-ltvcac">—</div></div>
+          <div class="summary-card"><div class="sc-tag">Точка безубыточности</div><div class="sc-value small" id="sum-be">—</div></div>
+          <div class="summary-card"><div class="sc-tag">Одна кофейня, 12 мес.</div><div class="sc-value" id="sum-annual-profit">—</div><div class="rc-sub">прибыль за год</div></div>
+          <div class="summary-card"><div class="sc-tag">Сеть</div><div class="sc-value" id="sum-stores">—</div><div class="rc-sub">точек к 12 мес.</div></div>
+          <div class="summary-card"><div class="sc-tag">Сеть, 12 мес.</div><div class="sc-value" id="sum-network-profit">—</div><div class="rc-sub">прибыль сети за год</div></div>
+          <div class="summary-card"><div class="sc-tag">Инвестиции</div><div class="sc-value" id="sum-invest">—</div><div class="rc-sub">нужно на старт сети</div></div>
+          <div class="summary-card"><div class="sc-tag">Окупаемость</div><div class="sc-value small" id="sum-payback">—</div></div>
+          <div class="summary-card"><div class="sc-tag">ROI, 12 мес.</div><div class="sc-value small" id="sum-roi">—</div></div>
+        </div>
+        <h3>Вопросы от наставника</h3>
+        <ul class="reflection-list">
+          <li>Откуда взялись эти цифры — реальные данные, оценка или желаемое?</li>
+          <li>Сходится ли экономика: LTV заметно больше CAC, точка безубыточности реалистична?</li>
+          <li>Какие 2–3 предположения в этой модели нужно проверить в первую очередь, прежде чем вкладывать деньги?</li>
+          <li>Что произойдёт с моделью, если отток клиентов окажется вдвое выше?</li>
+          <li>Хватит ли резерва, чтобы пройти кассовый разрыв, если он окажется глубже расчётного?</li>
+        </ul>
+        <div class="nav-buttons"><button class="btn-secondary" data-nav="prev">← Назад</button><button class="btn-primary" id="btn-print-2" type="button">🖨 Скачать / распечатать итог</button></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<footer class="app-footer">
+  <p>Черновая учебная финансовая модель для самостоятельного изучения — не является инвестиционной, бухгалтерской или налоговой консультацией. Для реальных решений сверьтесь со специалистом. Данные хранятся только в этом браузере и никуда не отправляются.</p>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+var STORAGE_KEY = "finmodel-workbook:v1";
+
+function defaultState(){
+  return {
+    b1:{price:null,var:null,ad:null,newCli:null},
+    b2:{start:null,lost:null},
+    b3:{freq:null},
+    b4:{newCli:null,retCli:null},
+    b5:{
+      varRows:[{name:"Зерно",amt:null},{name:"Стакан",amt:null},{name:"Молоко",amt:null}],
+      fixedRows:[{name:"Аренда",amt:null},{name:"Зарплата",amt:null},{name:"Коммуналка",amt:null},{name:"Налоги",amt:null}]
+    },
+    b6:{days:null,max:null},
+    b7:{growth:null},
+    b8:{pess:null,opt:null},
+    b9:{rows:[{name:"Оборудование",amt:null},{name:"Ремонт",amt:null},{name:"Депозит по аренде",amt:null}],reserve:null},
+    b10:{stores:[{month:null}]},
+    b11:{rows:[{name:"",amt:null},{name:"",amt:null}],terms:""}
+  };
+}
+
+var state = defaultState();
+var currentPanel = "intro";
+var PANEL_ORDER = ["intro","b1","b2","b3","b4","b5","b6","b7","b8","b9","b10","b11","summary"];
+var saveTimer = null;
+
+/* ---------- helpers ---------- */
+function num(v){ if(v===""||v===null||v===undefined) return null; var n=parseFloat(v); return isNaN(n)?null:n; }
+function isNum(v){ return typeof v==="number" && isFinite(v); }
+function sumRows(rows){
+  var any=false, s=0;
+  for(var i=0;i<rows.length;i++){ if(isNum(rows[i].amt)){ any=true; s+=rows[i].amt; } }
+  return any? s : null;
+}
+function fmtMoney(n){ if(!isNum(n)) return "—"; return Math.round(n).toLocaleString("ru-RU")+" ₽"; }
+function fmtInt(n){ if(!isNum(n)) return "—"; return Math.round(n).toLocaleString("ru-RU"); }
+function fmtNum(n,d){ if(!isNum(n)) return "—"; return n.toLocaleString("ru-RU",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtPct(n,d){ if(!isNum(n)) return "—"; return fmtNum(n,d===undefined?1:d)+"%"; }
+function fmtMonths(n){ if(!isNum(n)) return "—"; return fmtNum(n,1)+" мес."; }
+function setText(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; }
+function el(id){ return document.getElementById(id); }
+
+/* ---------- persistence ---------- */
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  },1000);
+}
+function deepMergeInto(target, src){
+  if(!src || typeof src!=="object") return;
+  for(var key in target){
+    if(!(key in src)) continue;
+    if(Array.isArray(target[key])){
+      if(Array.isArray(src[key])) target[key]=src[key];
+    } else if(typeof target[key]==="object" && target[key]!==null){
+      deepMergeInto(target[key], src[key]);
+    } else {
+      target[key]=src[key];
+    }
+  }
+}
+function loadState(){
+  try{
+    var raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){ deepMergeInto(state, JSON.parse(raw)); }
+  }catch(e){}
+}
+
+/* ---------- editable row tables ---------- */
+function renderRows(containerId, rows, cols, opts){
+  var container=el(containerId);
+  if(!container) return;
+  container.innerHTML="";
+  rows.forEach(function(row, idx){
+    var line=document.createElement("div");
+    line.className="row-editable"+(opts.twoCol?" two-col":"");
+    cols.forEach(function(col){
+      var inp=document.createElement("input");
+      inp.type=col.type;
+      inp.placeholder=col.placeholder||"";
+      if(col.type==="number") inp.step="any";
+      inp.value = row[col.key]===null||row[col.key]===undefined ? "" : row[col.key];
+      inp.setAttribute("aria-label", col.label||col.key);
+      inp.addEventListener("input", function(){
+        row[col.key] = col.type==="number" ? num(inp.value) : inp.value;
+        recalcAll();
+        scheduleSave();
+      });
+      line.appendChild(inp);
+    });
+    var btn=document.createElement("button");
+    btn.type="button"; btn.className="row-remove"; btn.setAttribute("aria-label","Удалить строку"); btn.textContent="✕";
+    btn.addEventListener("click", function(){
+      rows.splice(idx,1);
+      if(rows.length===0 && opts.keepAtLeastOne){ rows.push(opts.emptyRow()); }
+      renderRows(containerId, rows, cols, opts);
+      recalcAll();
+      scheduleSave();
+    });
+    line.appendChild(btn);
+    container.appendChild(line);
+  });
+}
+
+var COST_COLS=[{key:"name",type:"text",placeholder:"Статья расхода",label:"Статья"},{key:"amt",type:"number",placeholder:"0",label:"Сумма"}];
+var STORE_COLS=[{key:"month",type:"number",placeholder:"1",label:"Месяц открытия (1–12)"}];
+
+function renderB5Rows(){
+  renderRows("b5-varrows", state.b5.varRows, COST_COLS, {keepAtLeastOne:true, emptyRow:function(){return {name:"",amt:null};}});
+  renderRows("b5-fixedrows", state.b5.fixedRows, COST_COLS, {keepAtLeastOne:true, emptyRow:function(){return {name:"",amt:null};}});
+}
+function renderB9Rows(){
+  renderRows("b9-rows", state.b9.rows, COST_COLS, {keepAtLeastOne:true, emptyRow:function(){return {name:"",amt:null};}});
+}
+function renderB11Rows(){
+  renderRows("b11-rows", state.b11.rows, COST_COLS, {keepAtLeastOne:true, emptyRow:function(){return {name:"",amt:null};}});
+}
+function renderB10Rows(){
+  var container=el("b10-rows");
+  container.innerHTML="";
+  state.b10.stores.forEach(function(row, idx){
+    var line=document.createElement("div");
+    line.className="row-editable two-col";
+    var labelSpan=document.createElement("div");
+    labelSpan.textContent="Точка "+(idx+1);
+    labelSpan.style.fontSize=".88rem"; labelSpan.style.color="var(--muted)"; labelSpan.style.display="flex"; labelSpan.style.alignItems="center";
+    line.appendChild(labelSpan);
+    var inp=document.createElement("input");
+    inp.type="number"; inp.step="any"; inp.placeholder=String(Math.min(idx+1,12)); inp.min="1"; inp.max="12";
+    inp.value = row.month===null||row.month===undefined ? "" : row.month;
+    inp.setAttribute("aria-label","Месяц открытия точки "+(idx+1));
+    inp.addEventListener("input", function(){ row.month=num(inp.value); recalcAll(); scheduleSave(); });
+    line.appendChild(inp);
+    var btn=document.createElement("button");
+    btn.type="button"; btn.className="row-remove"; btn.setAttribute("aria-label","Удалить точку"); btn.textContent="✕";
+    btn.addEventListener("click", function(){
+      state.b10.stores.splice(idx,1);
+      renderB10Rows(); recalcAll(); scheduleSave();
+    });
+    line.appendChild(btn);
+    container.appendChild(line);
+  });
+}
+
+/* ---------- computations ---------- */
+function computeB1(){
+  var b=state.b1;
+  var margin=(isNum(b.price)&&isNum(b.var))? b.price-b.var : null;
+  var marginPct=(isNum(margin)&&b.price)? margin/b.price*100 : null;
+  var cac=(isNum(b.ad)&&b.newCli)? b.ad/b.newCli : null;
+  return {margin:margin, marginPct:marginPct, cac:cac, price:b.price};
+}
+function computeB2(){
+  var b=state.b2;
+  var churn=(b.start && isNum(b.lost))? b.lost/b.start*100 : null;
+  var retention=isNum(churn)? 100-churn : null;
+  var lifetime=(isNum(churn)&&churn>0)? 100/churn : null;
+  return {churn:churn, retention:retention, lifetime:lifetime};
+}
+function computeB3(b1,b2){
+  var freq=state.b3.freq;
+  var ltv=(isNum(b1.margin)&&isNum(freq)&&isNum(b2.lifetime))? b1.margin*freq*b2.lifetime : null;
+  var ltvCac=(isNum(ltv)&&b1.cac)? ltv/b1.cac : null;
+  var denom=(isNum(b1.margin)&&isNum(freq))? b1.margin*freq : null;
+  var payback=(denom>0 && isNum(b1.cac))? b1.cac/denom : null;
+  return {ltv:ltv, ltvCac:ltvCac, payback:payback};
+}
+function computeB4(b1){
+  var b=state.b4, freq=state.b3.freq;
+  var cups=(isNum(b.newCli)&&isNum(b.retCli)&&isNum(freq))? (b.newCli+b.retCli)*freq : null;
+  var revenue=(isNum(cups)&&isNum(b1.price))? cups*b1.price : null;
+  return {cups:cups, revenue:revenue};
+}
+function computeB5(){
+  return {totalVar: sumRows(state.b5.varRows), totalFixed: sumRows(state.b5.fixedRows)};
+}
+function computeB6(b1,b5){
+  var b=state.b6;
+  var be=(isNum(b5.totalFixed)&&isNum(b1.margin)&&b1.margin>0)? b5.totalFixed/b1.margin : null;
+  var beDay=(isNum(be)&&b.days)? be/b.days : null;
+  var status=null;
+  if(isNum(beDay)&&isNum(b.max)){
+    var ratio=b.max/beDay;
+    status = ratio<1 ? "red" : (ratio<1.15 ? "yellow" : "green");
+  }
+  return {be:be, beDay:beDay, status:status};
+}
+function computeB7(b1,b4,b5){
+  var g=state.b7.growth;
+  if(!isNum(b4.cups)||!isNum(g)||!isNum(b1.price)) return null;
+  var months=[]; var cups=b4.cups; var cum=0; var cumOk=true;
+  for(var i=0;i<12;i++){
+    if(i>0) cups=cups*(1+g/100);
+    var revenue=cups*b1.price;
+    var varCost=isNum(b5.totalVar)? cups*b5.totalVar : null;
+    var fixedCost=isNum(b5.totalFixed)? b5.totalFixed : null;
+    var profit=(isNum(varCost)&&isNum(fixedCost))? revenue-varCost-fixedCost : null;
+    if(isNum(profit)){ cum+=profit; } else { cumOk=false; }
+    months.push({i:i+1, cups:cups, revenue:revenue, varCost:varCost, fixedCost:fixedCost, profit:profit, cum: cumOk? cum : null});
+  }
+  var totalRevenue=months.reduce(function(s,m){return s+m.revenue;},0);
+  var profitsOk=months.every(function(m){return isNum(m.profit);});
+  var totalProfit=profitsOk? months.reduce(function(s,m){return s+m.profit;},0) : null;
+  return {months:months, totalRevenue:totalRevenue, totalProfit:totalProfit};
+}
+function computeScenario(b1,b4,b5,pct){
+  var g=state.b7.growth;
+  if(!isNum(b4.cups)||!isNum(g)||!isNum(b1.price)||!isNum(pct)||!isNum(b5.totalVar)||!isNum(b5.totalFixed)) return null;
+  var cups=b4.cups*(1+pct/100); var cum=0; var totalProfit=0;
+  for(var i=0;i<12;i++){
+    if(i>0) cups=cups*(1+g/100);
+    var revenue=cups*b1.price;
+    var profit=revenue-cups*b5.totalVar-b5.totalFixed;
+    cum+=profit; totalProfit+=profit;
+  }
+  return {totalProfit:totalProfit, finalCash:cum};
+}
+function computeB9(b7){
+  var rows=state.b9.rows, reserve=state.b9.reserve;
+  var total=sumRows(rows);
+  if(!b7 || total===null || !b7.months.every(function(m){return isNum(m.profit);})){
+    return {total:total, paybackMonth:null, depth:null};
+  }
+  var cum=-total, min=0, paybackMonth=null;
+  b7.months.forEach(function(m){
+    cum+=m.profit;
+    if(cum<min) min=cum;
+    if(paybackMonth===null && cum>=0) paybackMonth=m.i;
+  });
+  return {total:total, paybackMonth:paybackMonth, depth: min<0? -min : 0, reserve:reserve};
+}
+function computeB10(b1,b4,b5){
+  var g=state.b7.growth;
+  var stores=state.b10.stores.filter(function(s){ return isNum(s.month) && s.month>=1 && s.month<=12; });
+  var econReady = isNum(b4.cups)&&isNum(g)&&isNum(b1.price)&&isNum(b5.totalVar)&&isNum(b5.totalFixed);
+  var monthly=[];
+  for(var M=1;M<=12;M++){
+    var revenue=0, cost=0, profit=0, any=false, openCount=0;
+    stores.forEach(function(s){
+      if(s.month<=M) openCount++;
+      if(econReady && s.month<=M){
+        var age=M-s.month;
+        var cups=b4.cups*Math.pow(1+g/100, age);
+        var rev=cups*b1.price;
+        var vc=cups*b5.totalVar;
+        var fc=b5.totalFixed;
+        revenue+=rev; cost+=(vc+fc); profit+=(rev-vc-fc); any=true;
+      }
+    });
+    monthly.push({M:M, openCount:openCount, revenue: any?revenue:null, cost: any?cost:null, profit: any?profit:null});
+  }
+  return {monthly:monthly, count: stores.length};
+}
+function computeB11(b10){
+  var total=sumRows(state.b11.rows);
+  if(total===null || !b10.monthly.every(function(m){return isNum(m.profit);}) || b10.count===0){
+    return {total:total, paybackMonth:null, roi:null};
+  }
+  var cum=0, paybackMonth=null, yearProfit=0;
+  b10.monthly.forEach(function(m){
+    cum+=m.profit; yearProfit+=m.profit;
+    if(paybackMonth===null && cum>=total) paybackMonth=m.M;
+  });
+  var roi = total>0 ? yearProfit/total*100 : null;
+  return {total:total, paybackMonth:paybackMonth, roi:roi};
+}
+
+/* ---------- render results ---------- */
+function renderB1(r){
+  setText("b1-margin", fmtMoney(r.margin));
+  setText("b1-marginpct", isNum(r.marginPct)? fmtPct(r.marginPct)+" от цены" : "");
+  setText("b1-cac", isNum(r.cac)? fmtMoney(r.cac)+"/чел." : "—");
+  el("b1-hint").style.display = (isNum(r.margin)&&isNum(r.cac)) ? "none" : "block";
+}
+function renderB2(r){
+  setText("b2-churn", fmtPct(r.churn));
+  setText("b2-retention", fmtPct(r.retention));
+  setText("b2-lifetime", fmtMonths(r.lifetime));
+  el("b2-hint").style.display = isNum(r.lifetime) ? "none" : "block";
+}
+function renderB3(r,b1,b2){
+  setText("b3-ltv", fmtMoney(r.ltv));
+  setText("b3-ltvcac", isNum(r.ltvCac)? fmtNum(r.ltvCac,2)+"×" : "—");
+  setText("b3-payback", fmtMonths(r.payback));
+  el("b3-hint").style.display = isNum(r.ltv) ? "none" : "block";
+  var freq=state.b3.freq;
+  var formulaEl=el("b3-formula");
+  if(isNum(r.ltv)){
+    var line1="<b>Как считается LTV:</b> маржа с чашки × частота покупок в месяц × средний срок «жизни» клиента = "
+      +fmtMoney(b1.margin)+" × "+fmtNum(freq,1)+" × "+fmtMonths(b2.lifetime)+" = <b>"+fmtMoney(r.ltv)+"</b>.";
+    var line2 = isNum(r.ltvCac)
+      ? "<br><b>Как считается LTV / CAC:</b> LTV ÷ CAC = "+fmtMoney(r.ltv)+" ÷ "+fmtMoney(b1.cac)+" = <b>"+fmtNum(r.ltvCac,2)+"×</b> — хорошо, если 3× и больше."
+      : "<br><b>LTV / CAC</b> = LTV, делённое на CAC (Блок 1).";
+    formulaEl.innerHTML = line1+line2;
+  } else {
+    formulaEl.innerHTML = "<b>Как считается:</b> LTV = маржа с 1 чашки (Блок 1) × частота покупок в месяц (поле выше) × средний срок «жизни» клиента (Блок 2). LTV / CAC = LTV, делённое на CAC (Блок 1) — хорошо, если результат 3× и больше.";
+  }
+}
+function renderB4(r){
+  setText("b4-cups", fmtInt(r.cups));
+  setText("b4-revenue", fmtMoney(r.revenue));
+  el("b4-hint").style.display = isNum(r.cups) ? "none" : "block";
+}
+function renderB5(r){
+  setText("b5-totalvar", isNum(r.totalVar)? fmtMoney(r.totalVar) : "—");
+  setText("b5-totalfixed", isNum(r.totalFixed)? fmtMoney(r.totalFixed) : "—");
+  var hint=el("b5-hint");
+  if(isNum(r.totalVar) && isNum(state.b1.var) && Math.abs(r.totalVar-state.b1.var)>0.5){
+    hint.textContent="Отличается от переменных расходов в Блоке 1 ("+fmtMoney(state.b1.var)+"). Сверьте цифры.";
+  } else {
+    hint.textContent="";
+  }
+}
+function renderB6(r){
+  setText("b6-be", fmtInt(r.be));
+  setText("b6-beday", fmtInt(r.beDay));
+  var ind=el("b6-indicator");
+  if(!r.status){ ind.innerHTML=""; }
+  else {
+    var labels={green:"План физически выполним", yellow:"На грани — впритык к максимуму", red:"Недостижимо при указанном максимуме"};
+    ind.innerHTML="<span class='status-pill "+r.status+"'><span class='sdot'></span>"+labels[r.status]+"</span>";
+  }
+  el("b6-hint").style.display = isNum(r.be) ? "none" : "block";
+}
+function renderB7(r){
+  var tbody=el("b7-tbody");
+  if(!r){
+    tbody.innerHTML="<tr><td colspan='7' class='table-empty'>Заполните Блок 1 (цена), Блок 4 (продажи), Блок 5 (расходы) и темп роста выше, чтобы увидеть модель на 12 месяцев.</td></tr>";
+    setText("b7-totalrevenue","—"); setText("b7-totalprofit","—");
+    return;
+  }
+  tbody.innerHTML = r.months.map(function(m){
+    return "<tr><td>"+m.i+"</td><td>"+fmtInt(m.cups)+"</td><td>"+fmtMoney(m.revenue)+"</td><td>"+(isNum(m.varCost)?fmtMoney(m.varCost):"—")+"</td><td>"+(isNum(m.fixedCost)?fmtMoney(m.fixedCost):"—")+"</td><td>"+(isNum(m.profit)?fmtMoney(m.profit):"—")+"</td><td>"+(isNum(m.cum)?fmtMoney(m.cum):"—")+"</td></tr>";
+  }).join("");
+  setText("b7-totalrevenue", fmtMoney(r.totalRevenue));
+  setText("b7-totalprofit", isNum(r.totalProfit)? fmtMoney(r.totalProfit) : "—");
+}
+function renderB8(b1,b4,b5){
+  var real=computeB7(b1,b4,b5);
+  var pess=computeScenario(b1,b4,b5,state.b8.pess);
+  var opt=computeScenario(b1,b4,b5,state.b8.opt);
+  setText("b8-pess-profit", pess? fmtMoney(pess.totalProfit) : "—");
+  setText("b8-pess-cash", pess? fmtMoney(pess.finalCash) : "—");
+  setText("b8-real-profit", real? fmtMoney(real.totalProfit) : "—");
+  setText("b8-real-cash", real? fmtMoney(real.months[11].cum) : "—");
+  setText("b8-opt-profit", opt? fmtMoney(opt.totalProfit) : "—");
+  setText("b8-opt-cash", opt? fmtMoney(opt.finalCash) : "—");
+  el("b8-hint").style.display = real ? "none" : "block";
+}
+function renderB9(r){
+  setText("b9-total", isNum(r.total)? fmtMoney(r.total) : "—");
+  setText("b9-payback", r.paybackMonth? ("месяц "+r.paybackMonth) : "—");
+  setText("b9-depth", isNum(r.depth)? fmtMoney(r.depth) : "—");
+  el("b9-hint").style.display = (isNum(r.total)&&r.paybackMonth!==undefined) ? "none" : "block";
+}
+function renderB10(r){
+  var tbody=el("b10-tbody");
+  tbody.innerHTML = r.monthly.map(function(m){
+    return "<tr><td>"+m.M+"</td><td>"+m.openCount+"</td><td>"+(isNum(m.revenue)?fmtMoney(m.revenue):"—")+"</td><td>"+(isNum(m.cost)?fmtMoney(m.cost):"—")+"</td><td>"+(isNum(m.profit)?fmtMoney(m.profit):"—")+"</td></tr>";
+  }).join("");
+  setText("b10-count", String(r.count));
+}
+function renderB11(r){
+  setText("b11-total", isNum(r.total)? fmtMoney(r.total) : "—");
+  setText("b11-payback", r.paybackMonth? ("месяц "+r.paybackMonth) : "—");
+  setText("b11-roi", isNum(r.roi)? fmtPct(r.roi) : "—");
+  el("b11-hint").style.display = isNum(r.roi) ? "none" : "block";
+}
+function renderSummary(b1,b2,b3,b6,b7,b10calc,b11calc){
+  setText("sum-margin", fmtMoney(b1.margin));
+  setText("sum-cac", fmtMoney(b1.cac));
+  setText("sum-ltvcac", isNum(b3.ltvCac)? fmtNum(b3.ltvCac,2)+"×" : "—");
+  setText("sum-be", isNum(b6.be)? fmtInt(b6.be)+" чашек/мес" : "—");
+  setText("sum-annual-profit", b7? fmtMoney(b7.totalProfit) : "—");
+  setText("sum-stores", String(b10calc.count));
+  var networkYearProfit = b10calc.monthly.every(function(m){return isNum(m.profit);}) ? b10calc.monthly.reduce(function(s,m){return s+m.profit;},0) : null;
+  setText("sum-network-profit", isNum(networkYearProfit)? fmtMoney(networkYearProfit) : "—");
+  setText("sum-invest", isNum(b11calc.total)? fmtMoney(b11calc.total) : "—");
+  setText("sum-payback", b11calc.paybackMonth? ("месяц "+b11calc.paybackMonth) : "—");
+  setText("sum-roi", isNum(b11calc.roi)? fmtPct(b11calc.roi) : "—");
+}
+
+/* ---------- progress / dots ---------- */
+function blockFilled(id){
+  switch(id){
+    case "b1": return isNum(state.b1.price)&&isNum(state.b1.var)&&isNum(state.b1.ad)&&isNum(state.b1.newCli);
+    case "b2": return isNum(state.b2.start)&&isNum(state.b2.lost);
+    case "b3": return isNum(state.b3.freq);
+    case "b4": return isNum(state.b4.newCli)&&isNum(state.b4.retCli);
+    case "b5": return sumRows(state.b5.varRows)!==null && sumRows(state.b5.fixedRows)!==null;
+    case "b6": return isNum(state.b6.days);
+    case "b7": return isNum(state.b7.growth);
+    case "b8": return isNum(state.b8.pess)&&isNum(state.b8.opt);
+    case "b9": return sumRows(state.b9.rows)!==null && isNum(state.b9.reserve);
+    case "b10": return state.b10.stores.some(function(s){return isNum(s.month);});
+    case "b11": return sumRows(state.b11.rows)!==null;
+    default: return false;
+  }
+}
+function updateProgress(){
+  var ids=["b1","b2","b3","b4","b5","b6","b7","b8","b9","b10","b11"];
+  var filledCount=0;
+  ids.forEach(function(id){
+    var filled=blockFilled(id);
+    if(filled) filledCount++;
+    var dot=document.querySelector("[data-dot='"+id+"']");
+    if(dot) dot.classList.toggle("filled", filled);
+  });
+  var pct = Math.round(filledCount/ids.length*100);
+  el("progress-fill").style.width=pct+"%";
+}
+
+/* ---------- master recalc ---------- */
+function recalcAll(){
+  var b1=computeB1();
+  var b2=computeB2();
+  var b3=computeB3(b1,b2);
+  var b4=computeB4(b1);
+  var b5=computeB5();
+  var b6=computeB6(b1,b5);
+  var b7=computeB7(b1,b4,b5);
+  var b9=computeB9(b7);
+  var b10=computeB10(b1,b4,b5);
+  var b11=computeB11(b10);
+
+  renderB1(b1); renderB2(b2); renderB3(b3,b1,b2); renderB4(b4); renderB5(b5); renderB6(b6);
+  renderB7(b7); renderB8(b1,b4,b5); renderB9(b9); renderB10(b10); renderB11(b11);
+  renderSummary(b1,b2,b3,b6,b7,b10,b11);
+  updateProgress();
+}
+
+/* ---------- input bindings ---------- */
+function bindNumber(id, obj, key){
+  var input=el(id); if(!input) return;
+  input.addEventListener("input", function(){ obj[key]=num(input.value); recalcAll(); scheduleSave(); });
+}
+function bindText(id, obj, key){
+  var input=el(id); if(!input) return;
+  input.addEventListener("input", function(){ obj[key]=input.value; scheduleSave(); });
+}
+function bindAllSimpleInputs(){
+  bindNumber("b1-price", state.b1, "price");
+  bindNumber("b1-var", state.b1, "var");
+  bindNumber("b1-ad", state.b1, "ad");
+  bindNumber("b1-newcli", state.b1, "newCli");
+  bindNumber("b2-start", state.b2, "start");
+  bindNumber("b2-lost", state.b2, "lost");
+  bindNumber("b3-freq", state.b3, "freq");
+  bindNumber("b4-newcli", state.b4, "newCli");
+  bindNumber("b4-retcli", state.b4, "retCli");
+  bindNumber("b6-days", state.b6, "days");
+  bindNumber("b6-max", state.b6, "max");
+  bindNumber("b7-growth", state.b7, "growth");
+  bindNumber("b8-pess", state.b8, "pess");
+  bindNumber("b8-opt", state.b8, "opt");
+  bindNumber("b9-reserve", state.b9, "reserve");
+  bindText("b11-terms", state.b11, "terms");
+}
+function applyStateToInputs(){
+  var map=[
+    ["b1-price",state.b1.price],["b1-var",state.b1.var],["b1-ad",state.b1.ad],["b1-newcli",state.b1.newCli],
+    ["b2-start",state.b2.start],["b2-lost",state.b2.lost],
+    ["b3-freq",state.b3.freq],
+    ["b4-newcli",state.b4.newCli],["b4-retcli",state.b4.retCli],
+    ["b6-days",state.b6.days],["b6-max",state.b6.max],
+    ["b7-growth",state.b7.growth],
+    ["b8-pess",state.b8.pess],["b8-opt",state.b8.opt],
+    ["b9-reserve",state.b9.reserve]
+  ];
+  map.forEach(function(pair){ var input=el(pair[0]); if(input) input.value = (pair[1]===null||pair[1]===undefined)? "" : pair[1]; });
+  var terms=el("b11-terms"); if(terms) terms.value=state.b11.terms||"";
+  renderB5Rows(); renderB9Rows(); renderB10Rows(); renderB11Rows();
+}
+
+/* ---------- tooltips ---------- */
+function bindTooltips(){
+  document.querySelectorAll("[data-tip-target]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var target=el(btn.getAttribute("data-tip-target"));
+      if(target) target.hidden = !target.hidden;
+    });
+  });
+}
+
+/* ---------- navigation ---------- */
+function goTo(id){
+  currentPanel=id;
+  document.querySelectorAll(".panel").forEach(function(p){ p.classList.toggle("is-active", p.id==="panel-"+id); });
+  document.querySelectorAll(".side-item").forEach(function(s){ s.classList.toggle("is-active", s.getAttribute("data-target")===id); });
+  el("content").scrollTop=0;
+  window.scrollTo({top:0, behavior:"instant" in window.CSS ? "instant" : "auto"});
+}
+function bindNavigation(){
+  document.querySelectorAll(".side-item").forEach(function(btn){
+    btn.addEventListener("click", function(){ goTo(btn.getAttribute("data-target")); });
+  });
+  document.querySelectorAll("[data-nav]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var dir=btn.getAttribute("data-nav");
+      var idx=PANEL_ORDER.indexOf(currentPanel);
+      idx = dir==="next" ? idx+1 : idx-1;
+      if(idx>=0 && idx<PANEL_ORDER.length) goTo(PANEL_ORDER[idx]);
+    });
+  });
+}
+
+/* ---------- reset ---------- */
+function bindReset(){
+  el("btn-reset").addEventListener("click", function(){
+    el("btn-reset").hidden=true;
+    el("reset-confirm").hidden=false;
+  });
+  el("reset-no").addEventListener("click", function(){
+    el("reset-confirm").hidden=true;
+    el("btn-reset").hidden=false;
+  });
+  el("reset-yes").addEventListener("click", function(){
+    state = defaultState();
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    applyStateToInputs();
+    recalcAll();
+    goTo("intro");
+    el("reset-confirm").hidden=true;
+    el("btn-reset").hidden=false;
+  });
+}
+
+/* ---------- print ---------- */
+function bindPrint(){
+  el("btn-print").addEventListener("click", function(){ window.print(); });
+  el("btn-print-2").addEventListener("click", function(){ window.print(); });
+}
+
+/* ---------- add-row buttons ---------- */
+function bindAddRows(){
+  el("b5-var-add").addEventListener("click", function(){ state.b5.varRows.push({name:"",amt:null}); renderB5Rows(); recalcAll(); scheduleSave(); });
+  el("b5-fixed-add").addEventListener("click", function(){ state.b5.fixedRows.push({name:"",amt:null}); renderB5Rows(); recalcAll(); scheduleSave(); });
+  el("b9-add").addEventListener("click", function(){ state.b9.rows.push({name:"",amt:null}); renderB9Rows(); recalcAll(); scheduleSave(); });
+  el("b11-add").addEventListener("click", function(){ state.b11.rows.push({name:"",amt:null}); renderB11Rows(); recalcAll(); scheduleSave(); });
+  el("b10-add").addEventListener("click", function(){ state.b10.stores.push({month:null}); renderB10Rows(); recalcAll(); scheduleSave(); });
+}
+
+/* ---------- init ---------- */
+function init(){
+  loadState();
+  bindAllSimpleInputs();
+  bindAddRows();
+  bindTooltips();
+  bindNavigation();
+  bindReset();
+  bindPrint();
+  applyStateToInputs();
+  recalcAll();
+}
+if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", init); } else { init(); }
+})();
+</script>
+
+</body>
+</html>
